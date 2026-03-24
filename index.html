@@ -517,6 +517,22 @@ body {
   z-index:50; transition:all .2s;
 }
 
+
+/* ── RESELLER REMOVE BTN ─────────────────── */
+.btn-remove-reseller {
+  background:#FFEBEE; color:#C62828; border:none;
+  border-radius:8px; padding:8px 14px; font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.btn-remove-reseller:active { transform:scale(.96); }
+
+/* ── SHIPPING LABEL ──────────────────────── */
+.btn-shipping { background:#E8EAF6; color:#1A237E; }
+
+/* ── PAYMENT BADGE ───────────────────────── */
+.pay-badge-paid { background:#E8F5E9; color:#2E7D32; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.pay-badge-due { background:#FFF3E0; color:#E65100; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+
 .cod-flag { 
   display:inline-flex; align-items:center; gap:4px;
   background:#FFF3E0; color:#E65100; font-size:10px; font-weight:700;
@@ -1092,10 +1108,23 @@ function orderCardHTML(o, showActions) {
   }
 
   const oid = o.id.slice(-6).toUpperCase();
+  // Payment info
+  const resellerPayAmt = (o.resellerPrice||0) * (o.quantity||1);
+  const isPaid = o.paymentStatus === 'paid';
+  const payLine = `<div style="display:flex;justify-content:space-between;align-items:center;background:${isPaid?'#E8F5E9':'#FFF3E0'};border-radius:8px;padding:10px 12px;margin-bottom:10px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-soft)">Admin کو ادائیگی (Reseller Price)</div>
+      <div style="font-size:18px;font-weight:700;color:${isPaid?'#2E7D32':'#E65100'};font-family:'Playfair Display',serif">Rs. ${Math.round(resellerPayAmt)}</div>
+      ${o.paymentMethod ? `<div style="font-size:11px;color:var(--text-soft)">طریقہ: ${o.paymentMethod}</div>` : ''}
+    </div>
+    <span class="${isPaid?'pay-badge-paid':'pay-badge-due'}">${isPaid?'✅ PAID':'⏳ DUE'}</span>
+  </div>`;
+
   const tools = `<div class="order-tools">
     <button class="tool-btn btn-invoice" onclick="printInvoice('${o.id}')">🧾 Invoice</button>
     <button class="tool-btn btn-whatsapp" onclick="sendWhatsApp('${o.id}')">💬 WhatsApp</button>
     <button class="tool-btn btn-sheet" onclick="downloadSheet('${o.id}')">📊 Sheet</button>
+    <button class="tool-btn btn-shipping" onclick="printShipping('${o.id}')" style="flex:1;min-width:100%;margin-top:2px">🏷️ Shipping Label Print</button>
   </div>`;
 
   return `<div class="order-card ${status}" id="ocard-${o.id}">
@@ -1113,6 +1142,7 @@ function orderCardHTML(o, showActions) {
       <span style="font-weight:700;color:var(--brown)">Rs.${Math.round(o.totalAmount||0)}</span>
     </div>
     ${addrBox}
+    ${payLine}
     ${o.trackingNumber ? `<div style="font-size:12px;color:var(--dispatched);margin-bottom:8px">🚚 ${o.courierCompany} · ${o.trackingNumber}</div>` : ''}
     ${actions}
     ${tools}
@@ -1281,6 +1311,9 @@ function renderResellers(query = '') {
     list.innerHTML = resellers.map((r, i) => {
       const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
       const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+      const resellerOrders = allOrders.filter(o => o.resellerId === r.id);
+      const resellerDue = resellerOrders.filter(o => ['accepted','dispatched'].includes(o.status) && o.paymentStatus !== 'paid')
+        .reduce((s,o) => s + ((o.resellerPrice||0)*(o.quantity||1)), 0);
       return `<div class="reseller-card">
         <div class="reseller-avatar">${(r.name||'R')[0].toUpperCase()}</div>
         <div class="reseller-info">
@@ -1289,7 +1322,10 @@ function renderResellers(query = '') {
           <div class="reseller-stats">
             <div class="reseller-stat"><strong>${r.totalOrders||0}</strong>Orders</div>
             <div class="reseller-stat"><strong>Rs. ${formatMoney(r.totalProfit||0)}</strong>Profit</div>
-            <div class="reseller-stat"><strong>Rs. ${formatMoney(r.walletBalance||0)}</strong>Wallet</div>
+            ${resellerDue > 0 ? `<div class="reseller-stat"><strong style="color:#E65100">Rs.${formatMoney(resellerDue)}</strong>Due</div>` : '<div class="reseller-stat"><strong style="color:#2E7D32">✅</strong>Paid</div>'}
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn-remove-reseller" onclick="removeReseller('${r.id}','${(r.name||'').replace(/'/g,"\\'")}')">🗑️ Remove Reseller</button>
           </div>
         </div>
         <div class="rank-badge ${rankClass}">${rankIcon}</div>
@@ -1399,6 +1435,102 @@ function toggleDarkMode() {
     document.documentElement.style.colorScheme === 'dark' ? 'light' : 'dark';
 }
 
+
+
+// ═══ SHIPPING LABEL PRINT ═══
+function printShipping(orderId) {
+  const o = allOrders.find(x => x.id === orderId);
+  if (!o) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Shipping Label</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .label {
+      border: 3px solid #000; border-radius: 12px;
+      padding: 20px; max-width: 380px; margin: 0 auto;
+    }
+    .label-header {
+      text-align: center; border-bottom: 2px solid #000;
+      padding-bottom: 12px; margin-bottom: 14px;
+    }
+    .label-header h2 { font-size: 20px; color: #4E342E; }
+    .label-header p { font-size: 11px; color: #888; }
+    .section { margin-bottom: 12px; }
+    .section-title { font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1px; color: #888; margin-bottom: 4px; }
+    .section-value { font-size: 16px; font-weight: 700; color: #000; line-height: 1.4; }
+    .section-sub { font-size: 13px; color: #333; }
+    .barcode-area { text-align: center; background: #f5f5f5;
+      border-radius: 8px; padding: 12px; margin: 14px 0; }
+    .order-id { font-size: 24px; font-weight: 900; letter-spacing: 3px; }
+    .cod-box { border: 2px solid #F4B400; border-radius: 8px;
+      padding: 10px; text-align: center; margin-top: 12px; }
+    .cod-text { font-size: 18px; font-weight: 700; color: #E65100; }
+    .cod-amt { font-size: 26px; font-weight: 900; color: #4E342E; }
+    .footer { text-align: center; font-size: 10px; color: #aaa; margin-top: 14px; }
+    @media print { button { display: none; } }
+  </style></head><body>
+  <div class="label">
+    <div class="label-header">
+      <h2>🏪 Desi Products</h2>
+      <p>Al Tohoheed Foods · Rahim Yar Khan</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📦 TO (Deliver To)</div>
+      <div class="section-value">${o.customerName||'—'}</div>
+      <div class="section-sub">📞 ${o.customerPhone||'—'}</div>
+      <div class="section-sub">📍 ${o.address||'—'}</div>
+      <div class="section-sub" style="font-weight:700;font-size:16px">🏙️ ${o.city||'—'}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📤 FROM (Sender)</div>
+      <div class="section-value">Al Tohoheed Foods</div>
+      <div class="section-sub">Rahim Yar Khan, Punjab</div>
+    </div>
+
+    <div class="barcode-area">
+      <div style="font-size:10px;color:#888;margin-bottom:4px">ORDER ID</div>
+      <div class="order-id">#${o.id.slice(-6).toUpperCase()}</div>
+      ${o.trackingNumber ? `<div style="margin-top:6px;font-size:12px;color:#555">Tracking: ${o.trackingNumber}</div>` : ''}
+    </div>
+
+    <div class="section">
+      <div class="section-title">📦 Product</div>
+      <div class="section-value">${o.productName||'—'} × ${o.quantity||1}</div>
+    </div>
+
+    <div class="cod-box">
+      <div class="cod-text">💵 COD - Cash on Delivery</div>
+      <div class="cod-amt">Rs. ${Math.round(o.totalAmount||0)}</div>
+      <div style="font-size:11px;color:#888;margin-top:4px">ڈیلیوری پر وصول کریں</div>
+    </div>
+
+    <div class="footer">
+      <p>${o.courierCompany ? o.courierCompany + ' Courier' : 'Courier Service'} · ${new Date().toLocaleDateString('en-PK')}</p>
+    </div>
+  </div>
+  <br>
+  <button onclick="window.print()" style="width:100%;padding:14px;background:#4E342E;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">🖨️ Print Shipping Label</button>
+  </body></html>`);
+  win.document.close();
+}
+
+// ═══ REMOVE RESELLER ═══
+async function removeReseller(resellerId, resellerName) {
+  if (!confirm(`"${resellerName}" کو remove کریں؟\nیہ ان کا account بند کر دے گا۔`)) return;
+  try {
+    await db.collection('users').doc(resellerId).update({
+      isActive: false,
+      removedAt: firebase.firestore.Timestamp.now()
+    });
+    // Disable via Auth REST API
+    showToast(`${resellerName} کو remove کر دیا گیا ✅`, 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
 
 // ═══ COPY ADDRESS ═══
 function copyAddress(text) {
