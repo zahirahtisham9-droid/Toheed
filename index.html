@@ -476,6 +476,47 @@ body {
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--gold-light); border-radius:2px; }
 
+
+/* ── ADDRESS COPY BOX ────────────────────── */
+.address-box {
+  background:#F3E5F5; border-radius:8px; padding:10px 12px;
+  margin-bottom:10px; display:flex; align-items:flex-start; gap:8px;
+}
+.address-text { flex:1; font-size:12px; color:#4A148C; line-height:1.5; font-weight:500; }
+.copy-btn {
+  background:#6A1B9A; color:var(--white); border:none;
+  border-radius:6px; padding:5px 10px; font-size:11px; font-weight:700;
+  cursor:pointer; white-space:nowrap; flex-shrink:0;
+}
+.copy-btn:active { opacity:.8; }
+
+/* ── ORDER ACTION BUTTONS ────────────────── */
+.order-tools {
+  display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;
+  padding-top:10px; border-top:1px solid #F0E8E0;
+}
+.tool-btn {
+  flex:1; min-width:calc(33% - 6px); padding:9px 6px;
+  border:none; border-radius:8px; font-family:'DM Sans',sans-serif;
+  font-size:11px; font-weight:600; cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; justify-content:center; gap:4px;
+}
+.tool-btn:active { transform:scale(.96); }
+.btn-invoice { background:#E3F2FD; color:#1565C0; }
+.btn-whatsapp { background:#E8F5E9; color:#1B5E20; }
+.btn-sheet { background:#E8F5E9; color:#2E7D32; }
+
+/* ── ADD RESELLER MODAL ──────────────────── */
+.add-reseller-fab {
+  position:fixed; bottom:90px; right:20px;
+  background:linear-gradient(135deg,var(--gold),#E65100);
+  color:var(--white); width:56px; height:56px;
+  border-radius:18px; border:none; font-size:26px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:0 6px 20px rgba(244,180,0,.5);
+  z-index:50; transition:all .2s;
+}
+
 .cod-flag { 
   display:inline-flex; align-items:center; gap:4px;
   background:#FFF3E0; color:#E65100; font-size:10px; font-weight:700;
@@ -573,6 +614,10 @@ body {
           <button class="qa-btn" onclick="showPage('products')">
             <span class="qa-icon">➕</span>
             <span class="qa-label">Add Product</span>
+          </button>
+          <button class="qa-btn" onclick="downloadAllOrdersCSV()">
+            <span class="qa-icon">📊</span>
+            <span class="qa-label">All Orders CSV</span>
           </button>
         </div>
       </div>
@@ -796,6 +841,44 @@ body {
   </div>
 </div>
 
+
+<!-- ADD RESELLER MODAL -->
+<div class="modal-overlay" id="addResellerModal">
+  <div class="modal-sheet" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👤 Add New Reseller</div>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="rName" placeholder="Muhammad Ali">
+    </div>
+    <div class="form-group">
+      <label>Phone Number *</label>
+      <input type="tel" id="rPhone" placeholder="03XX-XXXXXXX">
+    </div>
+    <div class="form-group">
+      <label>City *</label>
+      <select id="rCity">
+        <option value="">Select City...</option>
+        <option>Karachi</option><option>Lahore</option><option>Islamabad</option>
+        <option>Rawalpindi</option><option>Faisalabad</option><option>Multan</option>
+        <option>Peshawar</option><option>Quetta</option><option>Sialkot</option>
+        <option>Hyderabad</option><option>Bahawalpur</option><option>Rahim Yar Khan</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Password *</label>
+      <input type="password" id="rPassword" placeholder="Min 6 characters">
+    </div>
+    <button class="btn-primary" onclick="saveReseller()">✅ Create Reseller Account</button>
+    <button onclick="document.getElementById('addResellerModal').classList.remove('open')" style="width:100%;margin-top:10px;padding:12px;border:none;background:transparent;color:var(--text-soft);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer">Cancel</button>
+  </div>
+</div>
+
+<!-- ADD RESELLER FAB (shown on resellers page) -->
+<button class="add-reseller-fab" id="addResellerFab" style="display:none" onclick="document.getElementById('addResellerModal').classList.add('open')">＋</button>
+
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -987,6 +1070,13 @@ function orderCardHTML(o, showActions) {
   const status = o.status || 'pending';
   const date = o.createdAt?.toDate?.() ? o.createdAt.toDate().toLocaleDateString('en-PK') : 'N/A';
   const codRisk = o.isCodRisk ? '<span class="cod-flag">⚠️ COD Risk</span>' : '';
+  // Full address for copy
+  const fullAddr = [o.customerName, o.customerPhone, o.address, o.city].filter(Boolean).join(' | ');
+  const addrBox = `<div class="address-box">
+    <div class="address-text">📍 ${o.address||'—'}, ${o.city||'—'}<br>👤 ${o.customerName||''} · 📞 ${o.customerPhone||''}</div>
+    <button class="copy-btn" onclick="copyAddress('${fullAddr.replace(/'/g,"\'")}')">Copy</button>
+  </div>`;
+
   let actions = '';
   if (showActions) {
     if (status === 'pending') {
@@ -1000,29 +1090,32 @@ function orderCardHTML(o, showActions) {
       </div>`;
     }
   }
-  return `<div class="order-card ${status}">
+
+  const oid = o.id.slice(-6).toUpperCase();
+  const tools = `<div class="order-tools">
+    <button class="tool-btn btn-invoice" onclick="printInvoice('${o.id}')">🧾 Invoice</button>
+    <button class="tool-btn btn-whatsapp" onclick="sendWhatsApp('${o.id}')">💬 WhatsApp</button>
+    <button class="tool-btn btn-sheet" onclick="downloadSheet('${o.id}')">📊 Sheet</button>
+  </div>`;
+
+  return `<div class="order-card ${status}" id="ocard-${o.id}">
     <div class="order-header">
       <div>
-        <span class="order-id">#${o.id.slice(-6).toUpperCase()} · ${date}</span>
+        <span class="order-id">#${oid} · ${date}</span>
         ${codRisk}
       </div>
       <span class="status-badge ${status}">${status}</span>
     </div>
     <div class="order-customer">${o.customerName||'N/A'}</div>
     <div class="order-meta">
-      <span>📞 ${o.customerPhone||'—'}</span>
-      <span>📍 ${o.city||'—'}</span>
       <span>👤 ${o.resellerName||'—'}</span>
+      <span>📦 ${o.productName||'—'} ×${o.quantity||1}</span>
+      <span style="font-weight:700;color:var(--brown)">Rs.${Math.round(o.totalAmount||0)}</span>
     </div>
-    <div class="order-product">
-      <div>
-        <div class="order-product-name">${o.productName||'N/A'}</div>
-        <div class="order-product-qty">Qty: ${o.quantity||1} · Addr: ${(o.address||'').slice(0,30)}${(o.address||'').length>30?'...':''}</div>
-      </div>
-      <div class="order-amount">Rs. ${formatMoney(o.totalAmount||0)}</div>
-    </div>
-    ${o.trackingNumber ? `<div style="font-size:12px;color:var(--dispatched);margin-bottom:10px">🚚 ${o.courierCompany} · ${o.trackingNumber}</div>` : ''}
+    ${addrBox}
+    ${o.trackingNumber ? `<div style="font-size:12px;color:var(--dispatched);margin-bottom:8px">🚚 ${o.courierCompany} · ${o.trackingNumber}</div>` : ''}
     ${actions}
+    ${tools}
   </div>`;
 }
 
@@ -1283,6 +1376,7 @@ function showPage(page) {
   document.getElementById('topBarSub').textContent =
     {dashboard:'Dashboard',orders:'All Orders',dispatch:'Dispatch Center',tracking:'Live Tracking',resellers:'Resellers',products:'Products'}[page];
   document.getElementById('fabBtn').style.display = page === 'products' ? 'flex' : 'none';
+  document.getElementById('addResellerFab').style.display = page === 'resellers' ? 'flex' : 'none';
   currentPage = page;
   if (page === 'dashboard') loadDashboard();
 }
@@ -1303,6 +1397,196 @@ function showToast(msg, type = '') {
 function toggleDarkMode() {
   document.documentElement.style.colorScheme = 
     document.documentElement.style.colorScheme === 'dark' ? 'light' : 'dark';
+}
+
+
+// ═══ COPY ADDRESS ═══
+function copyAddress(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('Address copied! ✅', 'success'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Address copied! ✅', 'success');
+  }
+}
+
+// ═══ PRINT INVOICE ═══
+function printInvoice(orderId) {
+  const o = allOrders.find(x => x.id === orderId);
+  if (!o) return;
+  const date = o.createdAt?.toDate?.() ? o.createdAt.toDate().toLocaleDateString('en-PK') : new Date().toLocaleDateString();
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Invoice #${o.id.slice(-6).toUpperCase()}</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:400px;margin:20px auto;padding:20px;color:#333}
+    .logo{text-align:center;margin-bottom:20px}
+    .logo h2{color:#4E342E;margin:0}
+    .logo p{color:#888;font-size:12px;margin:4px 0}
+    hr{border:none;border-top:2px solid #F4B400;margin:16px 0}
+    .row{display:flex;justify-content:space-between;margin:8px 0;font-size:14px}
+    .row.bold{font-weight:700;font-size:16px}
+    .section{background:#FFF8F0;border-radius:8px;padding:12px;margin:12px 0}
+    .section h4{margin:0 0 8px;color:#4E342E;font-size:13px;text-transform:uppercase}
+    .status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#FFF3E0;color:#E65100}
+    .footer{text-align:center;margin-top:20px;font-size:11px;color:#888}
+    @media print{button{display:none}}
+  </style></head><body>
+  <div class="logo">
+    <h2>🏪 Desi Products</h2>
+    <p>Al Tohoheed Foods</p>
+    <p>Invoice Date: ${date}</p>
+  </div>
+  <hr>
+  <div class="row"><span>Invoice #</span><strong>#${o.id.slice(-6).toUpperCase()}</strong></div>
+  <div class="row"><span>Status</span><span class="status">${(o.status||'').toUpperCase()}</span></div>
+  <div class="section">
+    <h4>Customer Details</h4>
+    <div class="row"><span>Name</span><span>${o.customerName||'—'}</span></div>
+    <div class="row"><span>Phone</span><span>${o.customerPhone||'—'}</span></div>
+    <div class="row"><span>City</span><span>${o.city||'—'}</span></div>
+    <div class="row"><span>Address</span><span style="text-align:right;max-width:60%">${o.address||'—'}</span></div>
+  </div>
+  <div class="section">
+    <h4>Order Details</h4>
+    <div class="row"><span>Product</span><span>${o.productName||'—'}</span></div>
+    <div class="row"><span>Quantity</span><span>${o.quantity||1}</span></div>
+    <div class="row"><span>Unit Price</span><span>Rs. ${Math.round(o.retailPrice||0)}</span></div>
+    <div class="row bold"><span>Total</span><span>Rs. ${Math.round(o.totalAmount||0)}</span></div>
+  </div>
+  <div class="section">
+    <h4>Reseller Info</h4>
+    <div class="row"><span>Reseller</span><span>${o.resellerName||'—'}</span></div>
+    ${o.courierCompany ? `<div class="row"><span>Courier</span><span>${o.courierCompany}</span></div>` : ''}
+    ${o.trackingNumber ? `<div class="row"><span>Tracking</span><span>${o.trackingNumber}</span></div>` : ''}
+  </div>
+  <div class="footer">
+    <p>COD - Payment on Delivery</p>
+    <p>Thank you for your order!</p>
+  </div>
+  <br><button onclick="window.print()" style="width:100%;padding:12px;background:#F4B400;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700">🖨️ Print Invoice</button>
+  </body></html>`);
+  win.document.close();
+}
+
+// ═══ WHATSAPP BILL ═══
+function sendWhatsApp(orderId) {
+  const o = allOrders.find(x => x.id === orderId);
+  if (!o) return;
+  const date = o.createdAt?.toDate?.() ? o.createdAt.toDate().toLocaleDateString('en-PK') : new Date().toLocaleDateString();
+  const msg = `🧾 *ORDER INVOICE*
+━━━━━━━━━━━━━━━━━
+🏪 *Desi Products - Al Tohoheed*
+━━━━━━━━━━━━━━━━━
+📋 *Order #${o.id.slice(-6).toUpperCase()}*
+📅 Date: ${date}
+📦 Status: ${(o.status||'').toUpperCase()}
+
+👤 *Customer:* ${o.customerName||'—'}
+📞 *Phone:* ${o.customerPhone||'—'}
+📍 *Address:* ${o.address||'—'}, ${o.city||'—'}
+
+🛍️ *Product:* ${o.productName||'—'}
+🔢 *Qty:* ${o.quantity||1}
+💰 *Total:* Rs. ${Math.round(o.totalAmount||0)}
+
+${o.trackingNumber ? `🚚 *Courier:* ${o.courierCompany}
+🔍 *Tracking:* ${o.trackingNumber}` : ''}
+━━━━━━━━━━━━━━━━━
+COD - ادائیگی ڈیلیوری پر
+شکریہ! 🙏`;
+
+  const phone = (o.resellerPhone||'').replace(/[^0-9]/g,'');
+  const intlPhone = phone.startsWith('0') ? '92' + phone.slice(1) : phone;
+  const url = `https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// ═══ DOWNLOAD GOOGLE SHEET (CSV) ═══
+function downloadSheet(orderId) {
+  const o = allOrders.find(x => x.id === orderId);
+  if (!o) {
+    // Download ALL orders as CSV
+    downloadAllOrdersCSV();
+    return;
+  }
+  const date = o.createdAt?.toDate?.() ? o.createdAt.toDate().toLocaleDateString('en-PK') : '';
+  const headers = ['Order ID','Date','Status','Customer Name','Phone','Address','City','Product','Qty','Retail Price','Reseller Price','Total','Profit','Reseller','Courier','Tracking'];
+  const row = [
+    '#'+o.id.slice(-6).toUpperCase(), date, o.status||'',
+    o.customerName||'', o.customerPhone||'', o.address||'', o.city||'',
+    o.productName||'', o.quantity||1,
+    o.retailPrice||0, o.resellerPrice||0, o.totalAmount||0, o.profit||0,
+    o.resellerName||'', o.courierCompany||'', o.trackingNumber||''
+  ];
+  const csv = [headers, row].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `order_${o.id.slice(-6)}.csv`;
+  a.click();
+  showToast('CSV Downloaded! 📊', 'success');
+}
+
+function downloadAllOrdersCSV() {
+  const headers = ['Order ID','Date','Status','Customer Name','Phone','Address','City','Product','Qty','Total','Profit','Reseller','Courier','Tracking'];
+  const rows = allOrders.map(o => {
+    const date = o.createdAt?.toDate?.() ? o.createdAt.toDate().toLocaleDateString('en-PK') : '';
+    return ['#'+o.id.slice(-6).toUpperCase(), date, o.status||'',
+      o.customerName||'', o.customerPhone||'', o.address||'', o.city||'',
+      o.productName||'', o.quantity||1, o.totalAmount||0, o.profit||0,
+      o.resellerName||'', o.courierCompany||'', o.trackingNumber||''];
+  });
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `all_orders_${new Date().toLocaleDateString('en-PK').replace(/\//g,'-')}.csv`;
+  a.click();
+  showToast('All Orders CSV Downloaded! 📊', 'success');
+}
+
+// ═══ ADD RESELLER BY ADMIN ═══
+async function saveReseller() {
+  const name = document.getElementById('rName').value.trim();
+  const phone = document.getElementById('rPhone').value.trim();
+  const city = document.getElementById('rCity').value;
+  const pw = document.getElementById('rPassword').value;
+  if (!name||!phone||!city||!pw) { showToast('تمام fields بھریں', 'error'); return; }
+  if (pw.length < 6) { showToast('Password کم از کم 6 حروف', 'error'); return; }
+
+  // Use secondary Firebase app to create user without affecting admin session
+  const email = phone + '@desi.pk';
+  try {
+    // Create via Firebase Auth REST API
+    const apiKey = 'AIzaSyCF8jcgnhnbpRwTA1-mvEA48ZFu-lo0W2k';
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pw, returnSecureToken: true})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    await db.collection('users').doc(data.localId).set({
+      name, phone, city, email, role: 'reseller',
+      isActive: true, walletBalance: 0, totalOrders: 0,
+      totalProfit: 0, fcmToken: '',
+      createdAt: firebase.firestore.Timestamp.now()
+    });
+    document.getElementById('addResellerModal').classList.remove('open');
+    document.getElementById('rName').value = '';
+    document.getElementById('rPhone').value = '';
+    document.getElementById('rCity').value = '';
+    document.getElementById('rPassword').value = '';
+    showToast(`✅ ${name} کا account بن گیا! Phone: ${phone}`, 'success');
+  } catch(e) {
+    const msg = e.message.includes('EMAIL_EXISTS') ? 'یہ number پہلے سے registered ہے' : e.message;
+    showToast('Error: ' + msg, 'error');
+  }
 }
 
 // Close modals on overlay click
