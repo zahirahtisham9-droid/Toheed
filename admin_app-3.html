@@ -121,29 +121,106 @@ body {
 .main-content { flex:1; overflow-y:auto; padding-bottom:80px; }
 
 /* ── BOTTOM NAV ──────────────────────────── */
-.bottom-nav {
-  position: fixed; bottom:0; left:0; right:0;
-  background: var(--white);
-  display:flex; border-top: 1px solid #E8D5C0;
-  box-shadow: 0 -4px 20px rgba(78,52,46,.1);
-  z-index:100;
+
+/* ── DRAWER OVERLAY ──────────────────────── */
+.drawer-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.45);
+  z-index:150; display:none; backdrop-filter:blur(2px);
 }
-.nav-item {
-  flex:1; padding: 10px 0 12px;
-  display:flex; flex-direction:column; align-items:center; gap:3px;
-  cursor:pointer; border:none; background:transparent;
-  font-family:'DM Sans',sans-serif; font-size:10px; color:var(--text-soft);
-  transition: color .2s; position:relative;
+.drawer-overlay.open { display:block; }
+
+/* ── SIDE DRAWER ─────────────────────────── */
+.drawer {
+  position:fixed; top:0; left:-280px; bottom:0; width:280px;
+  background:linear-gradient(180deg, var(--brown) 0%, #3E2723 100%);
+  z-index:160; transition:left .3s cubic-bezier(.4,0,.2,1);
+  display:flex; flex-direction:column; overflow:hidden;
 }
-.nav-item.active { color: var(--gold); }
-.nav-item .nav-icon { font-size:22px; }
-.nav-badge {
-  position:absolute; top:6px; right:calc(50% - 18px);
+.drawer.open { left:0; }
+
+.drawer-header {
+  padding: 50px 24px 24px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.drawer-logo { font-size:40px; margin-bottom:8px; }
+.drawer-title {
+  font-family:'Playfair Display',serif; font-size:20px;
+  color:var(--white); line-height:1.2;
+}
+.drawer-sub { font-size:12px; color:rgba(255,255,255,.6); margin-top:4px; }
+
+.drawer-menu { flex:1; overflow-y:auto; padding:12px 0; }
+
+.drawer-item {
+  display:flex; align-items:center; gap:16px;
+  padding: 15px 24px; cursor:pointer; border:none;
+  background:transparent; width:100%; text-align:left;
+  font-family:'DM Sans',sans-serif; font-size:15px;
+  color:rgba(255,255,255,.75); transition:all .2s;
+  position:relative;
+}
+.drawer-item:active { background:rgba(255,255,255,.08); }
+.drawer-item.active {
+  background:rgba(244,180,0,.2);
+  color:var(--gold);
+  border-right: 3px solid var(--gold);
+}
+.drawer-item .di-icon { font-size:22px; width:28px; text-align:center; }
+.drawer-item .di-label { font-weight:500; flex:1; }
+.drawer-item .di-badge {
   background:var(--danger); color:var(--white);
-  font-size:9px; font-weight:700; min-width:16px; height:16px;
-  border-radius:8px; display:flex; align-items:center; justify-content:center;
-  padding: 0 4px;
+  font-size:10px; font-weight:700; min-width:20px; height:20px;
+  border-radius:10px; display:flex; align-items:center; justify-content:center;
+  padding:0 6px;
 }
+
+.drawer-divider {
+  height:1px; background:rgba(255,255,255,.1);
+  margin: 8px 24px;
+}
+
+.drawer-footer {
+  padding:20px 24px;
+  border-top:1px solid rgba(255,255,255,.1);
+  display:flex; flex-direction:column; gap:10px;
+}
+.drawer-footer-btn {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; border-radius:12px; border:none;
+  cursor:pointer; font-family:'DM Sans',sans-serif;
+  font-size:14px; font-weight:600; width:100%; transition:all .2s;
+}
+.btn-dark-mode { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }
+.btn-logout { background:rgba(198,40,40,.3); color:#FF8A80; }
+
+/* ── NEW TOP BAR (hamburger) ─────────────── */
+.top-bar {
+  background:linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
+  padding: 14px 16px;
+  display:flex; align-items:center; gap:12px;
+  position:sticky; top:0; z-index:100;
+  box-shadow: 0 2px 12px rgba(78,52,46,.3);
+}
+.hamburger-btn {
+  width:40px; height:40px; border-radius:12px;
+  background:rgba(255,255,255,.15); border:none;
+  color:var(--white); display:flex; align-items:center;
+  justify-content:center; cursor:pointer; flex-shrink:0;
+}
+.hamburger-icon { font-size:20px; }
+.top-bar-center { flex:1; }
+.top-bar-title { color:var(--white); font-family:'Playfair Display',serif; font-size:17px; }
+.top-bar-sub { color:rgba(255,255,255,.7); font-size:11px; margin-top:1px; }
+.top-bar-badge {
+  background:var(--danger); color:var(--white);
+  font-size:11px; font-weight:700; min-width:22px; height:22px;
+  border-radius:11px; display:none; align-items:center; justify-content:center;
+  padding:0 6px; flex-shrink:0;
+}
+
+/* Main content no bottom padding needed */
+.main-content { flex:1; overflow-y:auto; padding-bottom:20px; }
+
 
 /* ── PAGES ───────────────────────────────── */
 .page { display:none; }
@@ -517,6 +594,22 @@ body {
   z-index:50; transition:all .2s;
 }
 
+
+/* ── RESELLER REMOVE BTN ─────────────────── */
+.btn-remove-reseller {
+  background:#FFEBEE; color:#C62828; border:none;
+  border-radius:8px; padding:8px 14px; font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.btn-remove-reseller:active { transform:scale(.96); }
+
+/* ── SHIPPING LABEL ──────────────────────── */
+.btn-shipping { background:#E8EAF6; color:#1A237E; }
+
+/* ── PAYMENT BADGE ───────────────────────── */
+.pay-badge-paid { background:#E8F5E9; color:#2E7D32; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.pay-badge-due { background:#FFF3E0; color:#E65100; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+
 .cod-flag { 
   display:inline-flex; align-items:center; gap:4px;
   background:#FFF3E0; color:#E65100; font-size:10px; font-weight:700;
@@ -552,16 +645,74 @@ body {
 <!-- ═══ APP SHELL ═══ -->
 <div id="appShell" class="screen">
 
+  <!-- DRAWER OVERLAY -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+  <!-- SIDE DRAWER -->
+  <div class="drawer" id="sideDrawer">
+    <div class="drawer-header">
+      <div class="drawer-logo">🏪</div>
+      <div class="drawer-title">Desi Admin Panel</div>
+      <div class="drawer-sub">Reseller Management System</div>
+    </div>
+
+    <div class="drawer-menu">
+      <button class="drawer-item active" id="nav-dashboard" onclick="showPage('dashboard');closeDrawer()">
+        <span class="di-icon">📊</span>
+        <span class="di-label">Dashboard</span>
+      </button>
+      <button class="drawer-item" id="nav-orders" onclick="showPage('orders');closeDrawer()">
+        <span class="di-icon">📋</span>
+        <span class="di-label">Orders</span>
+        <span class="di-badge" id="pendingBadge" style="display:none">0</span>
+      </button>
+      <button class="drawer-item" id="nav-dispatch" onclick="showPage('dispatch');closeDrawer()">
+        <span class="di-icon">🚚</span>
+        <span class="di-label">Dispatch</span>
+      </button>
+      <button class="drawer-item" id="nav-tracking" onclick="showPage('tracking');closeDrawer()">
+        <span class="di-icon">📡</span>
+        <span class="di-label">Live Tracking</span>
+      </button>
+
+      <div class="drawer-divider"></div>
+
+      <button class="drawer-item" id="nav-resellers" onclick="showPage('resellers');closeDrawer()">
+        <span class="di-icon">👥</span>
+        <span class="di-label">Resellers</span>
+      </button>
+      <button class="drawer-item" id="nav-products" onclick="showPage('products');closeDrawer()">
+        <span class="di-icon">📦</span>
+        <span class="di-label">Products</span>
+      </button>
+
+      <div class="drawer-divider"></div>
+
+      <button class="drawer-item" onclick="downloadAllOrdersCSV();closeDrawer()">
+        <span class="di-icon">📊</span>
+        <span class="di-label">Export All Orders CSV</span>
+      </button>
+    </div>
+
+    <div class="drawer-footer">
+      <button class="drawer-footer-btn btn-dark-mode" onclick="toggleDarkMode()">
+        🌙 <span>Dark Mode</span>
+      </button>
+      <button class="drawer-footer-btn btn-logout" onclick="doLogout()">
+        🚪 <span>Logout</span>
+      </button>
+    </div>
+  </div>
+
   <!-- TOP BAR -->
   <div class="top-bar">
-    <div>
-      <div class="top-bar-title">🏪 Desi Admin</div>
-      <div class="top-bar-sub" id="topBarSub">Dashboard</div>
+    <button class="hamburger-btn" onclick="openDrawer()">
+      <span class="hamburger-icon">☰</span>
+    </button>
+    <div class="top-bar-center">
+      <div class="top-bar-title" id="topBarSub">Dashboard</div>
     </div>
-    <div class="top-bar-right">
-      <button class="icon-btn" onclick="toggleDarkMode()" title="Dark Mode">🌙</button>
-      <button class="icon-btn" onclick="doLogout()" title="Logout">🚪</button>
-    </div>
+    <div class="top-bar-badge" id="topPendingBadge">0</div>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -726,25 +877,7 @@ body {
 
   </div><!-- end main-content -->
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
-      <span class="nav-icon">📊</span>Dashboard
-    </button>
-    <button class="nav-item" onclick="showPage('orders')" id="nav-orders">
-      <span class="nav-icon">📋</span>Orders
-      <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
-    </button>
-    <button class="nav-item" onclick="showPage('dispatch')" id="nav-dispatch">
-      <span class="nav-icon">🚚</span>Dispatch
-    </button>
-    <button class="nav-item" onclick="showPage('tracking')" id="nav-tracking">
-      <span class="nav-icon">📡</span>Tracking
-    </button>
-    <button class="nav-item" onclick="showPage('resellers')" id="nav-resellers">
-      <span class="nav-icon">👥</span>Resellers
-    </button>
-  </div>
+
 
 </div><!-- end appShell -->
 
@@ -979,7 +1112,11 @@ function listenOrders() {
 function listenResellers() {
   db.collection('users').where('role','==','reseller').onSnapshot(snap => {
     allResellers = snap.docs.map(d => ({id: d.id, ...d.data()}))
-      .sort((a,b) => (b.totalOrders||0) - (a.totalOrders||0));
+      .sort((a,b) => {
+        // Active first, then by orders
+        if ((a.isActive===false) !== (b.isActive===false)) return a.isActive===false ? 1 : -1;
+        return (b.totalOrders||0) - (a.totalOrders||0);
+      });
     renderResellers();
   }, (err) => { console.log('Resellers error:', err); });
 }
@@ -1033,8 +1170,9 @@ function renderDashRecent() {
 function updateBadge() {
   const count = allOrders.filter(o => o.status === 'pending').length;
   const badge = document.getElementById('pendingBadge');
-  badge.style.display = count > 0 ? 'flex' : 'none';
-  badge.textContent = count;
+  if (badge) { badge.style.display = count > 0 ? 'flex' : 'none'; badge.textContent = count; }
+  const topBadge = document.getElementById('topPendingBadge');
+  if (topBadge) { topBadge.style.display = count > 0 ? 'flex' : 'none'; topBadge.textContent = count; }
 }
 
 // ═══ ORDERS ═══
@@ -1092,10 +1230,23 @@ function orderCardHTML(o, showActions) {
   }
 
   const oid = o.id.slice(-6).toUpperCase();
+  // Payment info
+  const resellerPayAmt = (o.resellerPrice||0) * (o.quantity||1);
+  const isPaid = o.paymentStatus === 'paid';
+  const payLine = `<div style="display:flex;justify-content:space-between;align-items:center;background:${isPaid?'#E8F5E9':'#FFF3E0'};border-radius:8px;padding:10px 12px;margin-bottom:10px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-soft)">Admin کو ادائیگی (Reseller Price)</div>
+      <div style="font-size:18px;font-weight:700;color:${isPaid?'#2E7D32':'#E65100'};font-family:'Playfair Display',serif">Rs. ${Math.round(resellerPayAmt)}</div>
+      ${o.paymentMethod ? `<div style="font-size:11px;color:var(--text-soft)">طریقہ: ${o.paymentMethod}</div>` : ''}
+    </div>
+    <span class="${isPaid?'pay-badge-paid':'pay-badge-due'}">${isPaid?'✅ PAID':'⏳ DUE'}</span>
+  </div>`;
+
   const tools = `<div class="order-tools">
     <button class="tool-btn btn-invoice" onclick="printInvoice('${o.id}')">🧾 Invoice</button>
     <button class="tool-btn btn-whatsapp" onclick="sendWhatsApp('${o.id}')">💬 WhatsApp</button>
     <button class="tool-btn btn-sheet" onclick="downloadSheet('${o.id}')">📊 Sheet</button>
+    <button class="tool-btn btn-shipping" onclick="printShipping('${o.id}')" style="flex:1;min-width:100%;margin-top:2px">🏷️ Shipping Label Print</button>
   </div>`;
 
   return `<div class="order-card ${status}" id="ocard-${o.id}">
@@ -1113,6 +1264,7 @@ function orderCardHTML(o, showActions) {
       <span style="font-weight:700;color:var(--brown)">Rs.${Math.round(o.totalAmount||0)}</span>
     </div>
     ${addrBox}
+    ${payLine}
     ${o.trackingNumber ? `<div style="font-size:12px;color:var(--dispatched);margin-bottom:8px">🚚 ${o.courierCompany} · ${o.trackingNumber}</div>` : ''}
     ${actions}
     ${tools}
@@ -1281,6 +1433,9 @@ function renderResellers(query = '') {
     list.innerHTML = resellers.map((r, i) => {
       const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
       const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+      const resellerOrders = allOrders.filter(o => o.resellerId === r.id);
+      const resellerDue = resellerOrders.filter(o => ['accepted','dispatched'].includes(o.status) && o.paymentStatus !== 'paid')
+        .reduce((s,o) => s + ((o.resellerPrice||0)*(o.quantity||1)), 0);
       return `<div class="reseller-card">
         <div class="reseller-avatar">${(r.name||'R')[0].toUpperCase()}</div>
         <div class="reseller-info">
@@ -1289,7 +1444,14 @@ function renderResellers(query = '') {
           <div class="reseller-stats">
             <div class="reseller-stat"><strong>${r.totalOrders||0}</strong>Orders</div>
             <div class="reseller-stat"><strong>Rs. ${formatMoney(r.totalProfit||0)}</strong>Profit</div>
-            <div class="reseller-stat"><strong>Rs. ${formatMoney(r.walletBalance||0)}</strong>Wallet</div>
+            ${resellerDue > 0 ? `<div class="reseller-stat"><strong style="color:#E65100">Rs.${formatMoney(resellerDue)}</strong>Due</div>` : '<div class="reseller-stat"><strong style="color:#2E7D32">✅</strong>Paid</div>'}
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            ${r.isActive !== false ? 
+              `<button class="btn-remove-reseller" onclick="removeReseller('${r.id}','${(r.name||'').replace(/'/g,"\\'")}')">🗑️ Remove</button>` :
+              `<span style="font-size:10px;font-weight:700;padding:4px 10px;background:#FFEBEE;color:#C62828;border-radius:6px">❌ REMOVED</span>
+               <button style="background:#E8F5E9;color:#2E7D32;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer" onclick="reactivateReseller('${r.id}','${(r.name||'').replace(/'/g,"\\'")}')">✅ Activate</button>`
+            }
           </div>
         </div>
         <div class="rank-badge ${rankClass}">${rankIcon}</div>
@@ -1367,14 +1529,27 @@ async function saveProduct() {
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
+
+// ═══ DRAWER ═══
+function openDrawer() {
+  document.getElementById('sideDrawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('sideDrawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 // ═══ NAVIGATION ═══
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.drawer-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1)).classList.add('active');
   document.getElementById('nav-' + page)?.classList.add('active');
-  document.getElementById('topBarSub').textContent =
-    {dashboard:'Dashboard',orders:'All Orders',dispatch:'Dispatch Center',tracking:'Live Tracking',resellers:'Resellers',products:'Products'}[page];
+  const labels = {dashboard:'📊 Dashboard',orders:'📋 All Orders',dispatch:'🚚 Dispatch',tracking:'📡 Live Tracking',resellers:'👥 Resellers',products:'📦 Products'};
+  document.getElementById('topBarSub').textContent = labels[page] || page;
   document.getElementById('fabBtn').style.display = page === 'products' ? 'flex' : 'none';
   document.getElementById('addResellerFab').style.display = page === 'resellers' ? 'flex' : 'none';
   currentPage = page;
@@ -1399,6 +1574,114 @@ function toggleDarkMode() {
     document.documentElement.style.colorScheme === 'dark' ? 'light' : 'dark';
 }
 
+
+
+// ═══ SHIPPING LABEL PRINT ═══
+function printShipping(orderId) {
+  const o = allOrders.find(x => x.id === orderId);
+  if (!o) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Shipping Label</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .label {
+      border: 3px solid #000; border-radius: 12px;
+      padding: 20px; max-width: 380px; margin: 0 auto;
+    }
+    .label-header {
+      text-align: center; border-bottom: 2px solid #000;
+      padding-bottom: 12px; margin-bottom: 14px;
+    }
+    .label-header h2 { font-size: 20px; color: #4E342E; }
+    .label-header p { font-size: 11px; color: #888; }
+    .section { margin-bottom: 12px; }
+    .section-title { font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1px; color: #888; margin-bottom: 4px; }
+    .section-value { font-size: 16px; font-weight: 700; color: #000; line-height: 1.4; }
+    .section-sub { font-size: 13px; color: #333; }
+    .barcode-area { text-align: center; background: #f5f5f5;
+      border-radius: 8px; padding: 12px; margin: 14px 0; }
+    .order-id { font-size: 24px; font-weight: 900; letter-spacing: 3px; }
+    .cod-box { border: 2px solid #F4B400; border-radius: 8px;
+      padding: 10px; text-align: center; margin-top: 12px; }
+    .cod-text { font-size: 18px; font-weight: 700; color: #E65100; }
+    .cod-amt { font-size: 26px; font-weight: 900; color: #4E342E; }
+    .footer { text-align: center; font-size: 10px; color: #aaa; margin-top: 14px; }
+    @media print { button { display: none; } }
+  </style></head><body>
+  <div class="label">
+    <div class="label-header">
+      <h2>🏪 Desi Products</h2>
+      <p>Al Tohoheed Foods · Rahim Yar Khan</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📦 TO (Deliver To)</div>
+      <div class="section-value">${o.customerName||'—'}</div>
+      <div class="section-sub">📞 ${o.customerPhone||'—'}</div>
+      <div class="section-sub">📍 ${o.address||'—'}</div>
+      <div class="section-sub" style="font-weight:700;font-size:16px">🏙️ ${o.city||'—'}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📤 FROM (Sender)</div>
+      <div class="section-value">Al Tohoheed Foods</div>
+      <div class="section-sub">Rahim Yar Khan, Punjab</div>
+    </div>
+
+    <div class="barcode-area">
+      <div style="font-size:10px;color:#888;margin-bottom:4px">ORDER ID</div>
+      <div class="order-id">#${o.id.slice(-6).toUpperCase()}</div>
+      ${o.trackingNumber ? `<div style="margin-top:6px;font-size:12px;color:#555">Tracking: ${o.trackingNumber}</div>` : ''}
+    </div>
+
+    <div class="section">
+      <div class="section-title">📦 Product</div>
+      <div class="section-value">${o.productName||'—'} × ${o.quantity||1}</div>
+    </div>
+
+    <div class="cod-box">
+      <div class="cod-text">💵 COD - Cash on Delivery</div>
+      <div class="cod-amt">Rs. ${Math.round(o.totalAmount||0)}</div>
+      <div style="font-size:11px;color:#888;margin-top:4px">ڈیلیوری پر وصول کریں</div>
+    </div>
+
+    <div class="footer">
+      <p>${o.courierCompany ? o.courierCompany + ' Courier' : 'Courier Service'} · ${new Date().toLocaleDateString('en-PK')}</p>
+    </div>
+  </div>
+  <br>
+  <button onclick="window.print()" style="width:100%;padding:14px;background:#4E342E;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">🖨️ Print Shipping Label</button>
+  </body></html>`);
+  win.document.close();
+}
+
+// ═══ REMOVE RESELLER ═══
+async function removeReseller(resellerId, resellerName) {
+  if (!confirm(`"${resellerName}" کو remove کریں؟\nیہ ان کا account بند ہو جائے گا اور login نہیں کر سکے گا۔`)) return;
+  try {
+    await db.collection('users').doc(resellerId).update({
+      isActive: false,
+      role: 'reseller_disabled',
+      removedAt: firebase.firestore.Timestamp.now()
+    });
+    showToast(`✅ ${resellerName} کو remove کر دیا گیا`, 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function reactivateReseller(resellerId, resellerName) {
+  if (!confirm(`"${resellerName}" کو دوبارہ activate کریں؟`)) return;
+  try {
+    await db.collection('users').doc(resellerId).update({
+      isActive: true,
+      role: 'reseller',
+      removedAt: null
+    });
+    showToast(`✅ ${resellerName} کو activate کر دیا گیا`, 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
 
 // ═══ COPY ADDRESS ═══
 function copyAddress(text) {
